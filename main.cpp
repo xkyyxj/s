@@ -102,14 +102,43 @@ int main() {
     output_file.close();*/
 
     //std::string&& output = calculator.patter_buy(info_list, 1, 7, Calculator::PriceFlag::MIN_PRICE);
-    std::string&& output = calculator.up_buy(info_list);
+    //std::string&& output = calculator.up_buy(info_list);
     /*std::string&& output = calculator.limit_up_ana(info_list,7);*/
 
-    std::string output_file_name(R"(D:\stock_workspace\processed_info\)");
+    /*std::string output_file_name(R"(D:\stock_workspace\processed_info\)");
     output_file_name.append("600588\\ana_result");
     output_file_name.append("\\up_10per_7_buy_info.csv");
 
     std::ofstream output_file(output_file_name);
+    output_file << output;
+    output_file.flush();
+    output_file.close();*/
+
+    //斜率分析的相关内容
+    std::list<Calculator::turn_point> turn_list;
+    calculator.slope_ana(info_list,turn_list);
+
+    auto turn_begin = turn_list.begin(), turn_end = turn_list.end();
+
+    using std::cout;
+    using std::endl;
+    using std::to_string;
+    Calculator::turn_point* temp_turn;
+    std::string output;
+    while(turn_begin != turn_end) {
+        temp_turn = &(*turn_begin);
+        output.append(temp_turn->start_point->get_date_info_str()).append(",");
+        output.append(to_string(temp_turn->percent)).append(",");
+        output.append(to_string(temp_turn->wave_days)).append(",");
+        output.append(to_string(temp_turn->slope)).append(",");
+        output.append(temp_turn->origin_up ? "Y" : "N").append(",");
+        output.append("\n");
+        //cout << << " " << temp_turn
+        turn_begin++;
+    }
+
+    std::string file_name(R"(D:\stock_workspace\one.csv)");
+    std::ofstream output_file(file_name);
     output_file << output;
     output_file.flush();
     output_file.close();

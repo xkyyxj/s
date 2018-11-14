@@ -659,7 +659,7 @@ std::string Calculator::patter_buy(std::list<stock_info>& info_list, int down_da
  * 
  * 需要关注的是这个过程当中
  */
-std::string Calculator::up_buy(std::list<stock_info>& info_list, int up_percent, int days, PriceFlag buy_price, PriceFlag sold_price, std::list<turn_point>& turn_list) {
+std::string Calculator::up_buy(std::list<stock_info>& info_list, std::list<turn_point>& turn_list, int up_percent, int days, PriceFlag buy_price, PriceFlag sold_price) {
     struct buy_rst {
         stock_info* base_info = nullptr;
         //base_info当天最高价买入，然后@param days那一天以收盘价卖出收益率
@@ -864,8 +864,11 @@ std::string Calculator::up_buy(std::list<stock_info>& info_list, int up_percent,
 
 /**
  * 斜率分析，通过斜率来获取上涨下跌以及相关信息
+ *
+ * TODO -- 存在问题，应当同前一天价格比较，来确定是否上升，而不是同上一个高点或低点比较从而确定是否上涨或者下跌
+ *  否则会忽略长线当中的短期波动
  */
-float Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent) {
+void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent) {
 
     //统计数据
     int small_wave_count = 0;
@@ -873,13 +876,14 @@ float Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_poi
     //根据哪个价格来计算斜率
     price_fun cal_price = get_price_fun(price);
 
-    stock_info* temp_info;
+    stock_info* curr_info, *pre_info;
     auto info_begin = info_list.rbegin(), info_end = info_list.rend();
 
     //初始化
-    float un_ig_percent = unignore_percent / 100;
+    float un_ig_percent = static_cast<float>(unignore_percent) / 100;
     turn_point temp_turn{};
     temp_turn.start_point = &(*info_begin);
+    pre_info = &(*info_begin);
     info_begin++;
     temp_turn.origin_up = ((*info_begin).*cal_price)() > (temp_turn.start_point->*cal_price)();
     turn_point_list.push_back(temp_turn);
@@ -888,11 +892,11 @@ float Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_poi
     unsigned int turn_last_days = 0;
 
     while(info_begin != info_end) {
-        temp_info = &(*info_begin);
+        curr_info = &(*info_begin);
         turn_point& turn_before = turn_point_list.back();
         turn_last_days++;
 
-        float cur_price = (temp_info->*cal_price)();
+        float cur_price = (curr_info->*cal_price)();
         float turn_before_price = (turn_before.start_point->*cal_price)();
         float slope = (cur_price - turn_before_price) / turn_last_days;
         float percent = (cur_price - turn_before_price) / turn_before_price;
@@ -907,7 +911,7 @@ float Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_poi
         }
         else if(turn_last_days >= ignore_days || percent >= un_ig_percent){
             turn_point insert_point{};
-            insert_point.start_point = temp_info;
+            insert_point.start_point = curr_info;
             insert_point.origin_up = is_up;
             insert_point.slope = slope;
             insert_point.percent = percent;

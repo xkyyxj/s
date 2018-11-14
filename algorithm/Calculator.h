@@ -53,7 +53,7 @@ public:
     int get_up_range() {return max_price - min_price;}
     void prbality_analy(std::list<stock_info> &);
 
-    float slope_ana(std::list<stock_info>&, std::list<turn_point>&, PriceFlag = PriceFlag::END_PRICE, int = 9, int = 25);
+    void slope_ana(std::list<stock_info>&, std::list<turn_point>&, PriceFlag = PriceFlag::END_PRICE, int = 9, int = 25);
 
     std::string buy_interest_ana(std::list<stock_info> &, int = 7, std::string = "0000-00-00",
             PriceFlag = PriceFlag::MAX_PRICE, PriceFlag = PriceFlag::END_PRICE);
@@ -68,7 +68,7 @@ public:
     void calculate_ma(std::list<stock_info>&);
 
     //换种考虑方式，如果是连续三天上涨
-    std::string up_buy(std::list<stock_info>&, int = 10, int = 7, PriceFlag = PriceFlag::BEGIN_PRICE, PriceFlag = PriceFlag::END_PRICE, std::list<turn_point>&);
+    std::string up_buy(std::list<stock_info>&, std::list<turn_point>&, int = 10, int = 7, PriceFlag = PriceFlag::BEGIN_PRICE, PriceFlag = PriceFlag::END_PRICE);
 
 private:
     std::map<int,float> probalityDist;
