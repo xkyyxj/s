@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by wangqchf on 2018/10/19.
 //
 
@@ -161,7 +161,7 @@ std::string Calculator::win_x_percent_days_ana(std::list<stock_info>& info_list,
                     temp_info.resolve_time_info = curr_info;
                     resolved_info.push_back(temp_info); //添加到已解决当中
                 }
-                //遵从插入排序的方式，将当天放入到未解决列表当中
+                    //遵从插入排序的方式，将当天放入到未解决列表当中
                 else if(cur_af_end_price > af_end_price) {
                     unresolved_begin++;
                 }
@@ -277,7 +277,7 @@ std::string Calculator::win_x_percent_days_ana(std::list<stock_info>& info_list,
  * @param sold_price 卖出价格
  */
 std::string Calculator::buy_interest_ana(std::list<stock_info> &info_list, int days, std::string begin_date,
-        PriceFlag buy_price,PriceFlag sold_price) {
+                                         PriceFlag buy_price,PriceFlag sold_price) {
 
     struct max_buy_rst {
         stock_info* base_info;
@@ -593,7 +593,7 @@ std::string Calculator::patter_buy(std::list<stock_info>& info_list, int down_da
                 rst_info.cal_days_count++;
             }
             windows_p++;
-            
+
         }
         list_begin++;
     }
@@ -656,7 +656,7 @@ std::string Calculator::patter_buy(std::list<stock_info>& info_list, int down_da
 /**
  * 特定的买入模式分析收益率如何,上升@param up_percent之后买入的效果如何，达到up_percent的后一天买入，
  * 其余的和buy_interest_ana类似
- * 
+ *
  * 需要关注的是这个过程当中
  */
 std::string Calculator::up_buy(std::list<stock_info>& info_list, std::list<turn_point>& turn_list, int up_percent, int days, PriceFlag buy_price, PriceFlag sold_price) {
@@ -802,7 +802,7 @@ std::string Calculator::up_buy(std::list<stock_info>& info_list, std::list<turn_
                 rst_info.cal_days_count++;
             }
             windows_p++;
-            
+
         }
         list_begin++;
     }
@@ -1121,7 +1121,7 @@ std::string Calculator::limit_up_ana(std::list<stock_info>& info_list, int days,
 
 /**
  * 计算移动均线，移动均线的数据存储到stock_info当中，为此重构了一下stock_info的类
- * 
+ *
  * @param info_list 输入的所有基本信息
  */
 void Calculator::calculate_ma(std::list<stock_info>& info_list) {

@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by wangqchf on 2018/10/19.
 //
 
@@ -56,7 +56,7 @@ public:
     void slope_ana(std::list<stock_info>&, std::list<turn_point>&, PriceFlag = PriceFlag::END_PRICE, int = 9, int = 25);
 
     std::string buy_interest_ana(std::list<stock_info> &, int = 7, std::string = "0000-00-00",
-            PriceFlag = PriceFlag::MAX_PRICE, PriceFlag = PriceFlag::END_PRICE);
+                                 PriceFlag = PriceFlag::MAX_PRICE, PriceFlag = PriceFlag::END_PRICE);
 
     std::string patter_buy(std::list<stock_info>&, int = 2, int = 7, PriceFlag = PriceFlag::MAX_PRICE, PriceFlag = PriceFlag::END_PRICE);
 

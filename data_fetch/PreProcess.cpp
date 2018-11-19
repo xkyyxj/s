@@ -1,4 +1,4 @@
-#include "PreProcess.h"
+﻿#include "PreProcess.h"
 
 /**
  * 从新浪财经上获取到的股票的基本信息都是按照时间顺序倒序排列的，
@@ -70,14 +70,14 @@ void PreProcess::process_weight_info(const std::string& input,std::list<std::str
             >> (repeat<9>(*(_ >> _n)));*/
     //正则表达式：\\t\d{4}-\d{2}-\d{2}(\\t)*</a>.*?</tr>
     //sregex regex = "\\t" >> repeat<4>(_d) >> "-" >> repeat<2>(_d) >> "-" >> repeat<2>(_d);
-            //>>*("\\t") >> "</a>" >> -*_ >> "</tr>";
+    //>>*("\\t") >> "</a>" >> -*_ >> "</tr>";
     /**
      * 正则表达式：\d{4}-\d{2}-\d{2}(\\t)*(</a>|</div></td>).*?</tr>
      * 对于std::string当中制表符表示成\t的情况，Xpressive静态的正则表达式
      * 当中不要表示成\\t，直接写成\t即可。
      */
     sregex regex = repeat<4>(_d) >> "-" >> repeat<2>(_d) >> "-" >> repeat<2>(_d)
-            >>*(keep("\t")) >> (keep("</a>") | "</div></td>") >> -*_ >> "</tr>";
+                                 >>*(keep("\t")) >> (keep("</a>") | "</div></td>") >> -*_ >> "</tr>";
     //sregex regex = *(keep("\t"));
 
     /*smatch match_result;
@@ -113,10 +113,10 @@ float PreProcess::set_stoinfo_weifactor(std::list<stock_info>& stock_info, std::
         if((*stock_info_begin_ite).get_date_info_str().compare((*weight_info_begin_ite).substr(0,10)) > 0) {
             stock_info_begin_ite++;
         }
-        /**
-         * 平高电气当中检测到一种情况：
-         * 可能股票若干天停牌，获取股票基本信息是是有内容的，但是股票的复权因子查询当中没有停牌这些天的信息
-         */
+            /**
+             * 平高电气当中检测到一种情况：
+             * 可能股票若干天停牌，获取股票基本信息是是有内容的，但是股票的复权因子查询当中没有停牌这些天的信息
+             */
         else if((*stock_info_begin_ite).get_date_info_str().compare((*weight_info_begin_ite).substr(0,10)) < 0) {
             weight_info_begin_ite++;
         }

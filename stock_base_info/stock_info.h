@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by wangqchf on 2018/10/19.
 //
 
@@ -252,8 +252,7 @@ public:
                 case 1:
                     set_stock_code(temp_str);
                     break;
-                case 2:
-                    set_stock_name(temp_str);
+                case 2:                    set_stock_name(temp_str);
                     break;
                 default:
                     (this->*fun_array[count - 3])(std::strtof(temp_str.data(), NULL));

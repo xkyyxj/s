@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by wangqchf on 2018/10/19.
 //
 
@@ -200,7 +200,7 @@ void DataFetch::get_http_by_beast(const std::string& host, const std::string& ta
     boost::beast::multi_buffer::const_buffers_type data = res.body().data();
     boost::beast::multi_buffer::const_buffers_type::const_iterator ite = data.begin();
     while(ite != data.end()) {
-        boost::asio::mutable_buffer mu_buffer = *ite;
+        auto mu_buffer = *ite;
         ret_data_size += mu_buffer.size();
         std::string data_str(static_cast<const char*>(mu_buffer.data()),mu_buffer.size());
         ret_result.append(data_str);
