@@ -35,12 +35,18 @@ public:
         MIN_PRICE
     };
 
+    enum Direction {
+        UP,
+        DOWN,
+        LEVEL
+    };
+
     //转折点
     struct turn_point {
         //该转折点的基本信息
         stock_info* start_point = nullptr;
-        //上一个转折点是否上涨
-        bool origin_up = false;
+        //上一个转折点后的走势
+        Direction origin_up = Direction::LEVEL;
         //从前一个转折点到该转折点的斜率
         float slope = 0;
         //从前一个转折点到该转折点的波动百分比

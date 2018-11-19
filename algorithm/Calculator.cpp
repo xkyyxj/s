@@ -864,11 +864,15 @@ std::string Calculator::up_buy(std::list<stock_info>& info_list, std::list<turn_
 
 /**
  * 斜率分析，通过斜率来获取上涨下跌以及相关信息
+ * 想了一下，存在一种简单的方式来确定是否上涨后者下跌，如下所述：
+ * 1.已经确认的趋势转折点
+ * 2.第一后备转折点以及第二后备转折点
+ * 第一后备转折点同第二后备转折点分别同趋势转折点计算斜率，如果两斜率之间相差不过10%，那么就算是趋势不变
  *
- * TODO -- 存在问题，应当同前一天价格比较，来确定是否上升，而不是同上一个高点或低点比较从而确定是否上涨或者下跌
+ *  TODO -- 存在问题，应当同前一天价格比较，来确定是否上升，而不是同上一个高点或低点比较从而确定是否上涨或者下跌
  *  否则会忽略长线当中的短期波动
  */
-void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent) {
+/*void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent) {
 
     //统计数据
     int small_wave_count = 0;
@@ -921,6 +925,68 @@ void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_poin
         }
         info_begin++;
     }
+}*/
+
+/**
+ * 决定采用滑动窗格的形式分析，滑动窗格当中每一段都当做一段独立的走势分析，从而决定是否与前一段走势相合并
+ */
+void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent) {
+
+    auto info_begin = info_list.rbegin(), info_end = info_list.rend();
+
+    int slide_len = 0, last_days = 0;
+    turn_point slide_win[ignore_days];
+    std::list<turn_point> rst_list;
+
+    price_fun judge_price = get_price_fun(price);
+
+    stock_info* cur_day_info = nullptr;
+
+    //做一个先验初始化
+    turn_point start_point{};
+    start_point.start_point = &(*info_begin);
+    info_begin++;
+    while(info_begin != info_end) {
+        cur_day_info = &(*info_begin);
+        if((cur_day_info->*judge_price)() > (start_point.start_point->*judge_price)()) {
+
+        }
+    }
+
+    bool is_pre_up = false;
+    float slide_max_price = 0, slide_min_price = 0, cur_day_price = 0, pre_day_price = 0;
+    stock_info* pre_day_info = nullptr;
+    while(info_begin != info_end) {
+        turn_point& last_turn_point = rst_list.back();
+        cur_day_info = &(*info_begin);
+        bool is_cur_up = (cur_day_info->*judge_price)() > (pre_day_info->*judge_price)();
+
+        last_days++;
+        if(is_pre_up ^ is_cur_up) {
+            turn_point temp_turn{};
+            temp_turn.start_point = pre_day_info;
+            slide_win[slide_len++] = temp_turn;
+
+            cur_day_price = (cur_day_info->*judge_price)();
+            pre_day_price = (pre_day_info->*judge_price)();
+            if(is_cur_up) {
+                slide_max_price = cur_day_price > slide_max_price ? cur_day_price : slide_max_price;
+                slide_min_price = pre_day_price > slide_min_price ? slide_min_price : pre_day_price;
+            }
+            else {
+                slide_max_price = pre_day_price > slide_max_price ? pre_day_price : slide_max_price;
+                slide_min_price = cur_day_price > slide_min_price ? slide_min_price : cur_day_price;
+            }
+        }
+
+        if(last_days == ignore_days) {
+
+        }
+
+        is_pre_up = is_cur_up;
+        info_begin++;
+    }
+
 }
 
 std::string Calculator::limit_up_ana(std::list<stock_info>& info_list, int days, PriceFlag buy_price, PriceFlag sold_price) {

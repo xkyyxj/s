@@ -8,6 +8,8 @@
 std::map<std::string,std::string> res_map;
 #ifdef WINDOWS_PLATFORM
 #define DllExport __declspec( dllexport )//宏定义
+#else
+#define DllExport
 #endif
 
 DllExport std::string get_str() {
