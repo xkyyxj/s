@@ -46,7 +46,7 @@ public:
         //该转折点的基本信息
         stock_info* start_point = nullptr;
         //上一个转折点后的走势
-        Direction origin_up = Direction::LEVEL;
+        Direction next_direction = Direction::LEVEL;
         //从前一个转折点到该转折点的斜率
         float slope = 0;
         //从前一个转折点到该转折点的波动百分比

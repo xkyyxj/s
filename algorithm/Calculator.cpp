@@ -762,10 +762,10 @@ std::string Calculator::up_buy(std::list<stock_info>& info_list, std::list<turn_
                     rst_begin++;
                 }
                 if(rst_info.cal_days_count == days) {
-                    buy_rst& target_buy_rst = (*rst_begin);
-                    float buy_price_val = (target_buy_rst.base_info->*buy_fun)();
-                    float cur_sold_price_val = (temp_stock->*sold_fun)();
-                    float curr_win_percent = (cur_sold_price_val - buy_price_val) / buy_price_val;
+                    auto target_buy_rst = (*rst_begin);
+                    const auto buy_price_val = (target_buy_rst.base_info->*buy_fun)();
+					const auto cur_sold_price_val = (temp_stock->*sold_fun)();
+					const auto curr_win_percent = (cur_sold_price_val - buy_price_val) / buy_price_val;
                     target_buy_rst.days_percent = curr_win_percent;
                     max_win_percent = curr_win_percent > max_win_percent ? curr_win_percent : max_win_percent;
                     max_lose_percent = max_lose_percent < curr_win_percent ? max_lose_percent : curr_win_percent;
@@ -932,61 +932,97 @@ std::string Calculator::up_buy(std::list<stock_info>& info_list, std::list<turn_
  */
 void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent) {
 
-    auto info_begin = info_list.rbegin(), info_end = info_list.rend();
+	auto info_begin = info_list.rbegin();
+	const auto info_end = info_list.rend();
 
     int slide_len = 0, last_days = 0;
-    turn_point slide_win[ignore_days];
+    turn_point* slide_win = new turn_point[ignore_days];
     std::list<turn_point> rst_list;
 
-    price_fun judge_price = get_price_fun(price);
+	const price_fun judge_price = get_price_fun(price);
 
-    stock_info* cur_day_info = nullptr;
+    stock_info* cur_day_info = nullptr, *pre_day_info = nullptr;
+	int to_max_price_days = 0, to_min_price_days = 0;
+	turn_point max_price_point, min_price_point, last_turn_point;
 
-    //做一个先验初始化
-    turn_point start_point{};
-    start_point.start_point = &(*info_begin);
-    info_begin++;
-    while(info_begin != info_end) {
-        cur_day_info = &(*info_begin);
-        if((cur_day_info->*judge_price)() > (start_point.start_point->*judge_price)()) {
+	//初始化列表
+	if(info_begin != info_end) {
+		cur_day_info = &(*info_begin);
+		turn_point init_point{};
+		init_point.start_point = cur_day_info;
+		pre_day_info = cur_day_info;
+		last_turn_point = max_price_point = min_price_point = init_point;
+		++info_begin;
+	}
+	
 
-        }
-    }
-
-    bool is_pre_up = false;
+    bool is_pre_up = false, is_cur_up = false;
     float slide_max_price = 0, slide_min_price = 0, cur_day_price = 0, pre_day_price = 0;
-    stock_info* pre_day_info = nullptr;
+	Direction curr_direction;
     while(info_begin != info_end) {
-        turn_point& last_turn_point = rst_list.back();
-        cur_day_info = &(*info_begin);
-        bool is_cur_up = (cur_day_info->*judge_price)() > (pre_day_info->*judge_price)();
+		turn_point& last_definite_turn = rst_list.back();
+		++last_days;
+		cur_day_info = &(*info_begin);
+		is_cur_up = (cur_day_info->*judge_price)() > (pre_day_info->*judge_price)();
 
-        last_days++;
-        if(is_pre_up ^ is_cur_up) {
-            turn_point temp_turn{};
-            temp_turn.start_point = pre_day_info;
-            slide_win[slide_len++] = temp_turn;
+		//碰到一个转折点
+		if(is_cur_up ^ is_pre_up) {
+			turn_point insert_point{};
+			insert_point.start_point = pre_day_info;
 
-            cur_day_price = (cur_day_info->*judge_price)();
-            pre_day_price = (pre_day_info->*judge_price)();
-            if(is_cur_up) {
-                slide_max_price = cur_day_price > slide_max_price ? cur_day_price : slide_max_price;
-                slide_min_price = pre_day_price > slide_min_price ? slide_min_price : pre_day_price;
-            }
-            else {
-                slide_max_price = pre_day_price > slide_max_price ? pre_day_price : slide_max_price;
-                slide_min_price = cur_day_price > slide_min_price ? slide_min_price : cur_day_price;
-            }
-        }
+			if((max_price_point.start_point->*judge_price)() < (pre_day_info->*judge_price)()) {
+				to_max_price_days = last_days;
+				max_price_point = insert_point;
+			}
 
-        if(last_days == ignore_days) {
+			if((min_price_point.start_point->*judge_price)() > (pre_day_info->*judge_price)()) {
+				to_min_price_days = last_days;
+				min_price_point = insert_point;
+			}
 
-        }
+			//判定一下最大峰值与最小峰值之间是否达到了不能忽视的波动幅度
+			const float max_price = (max_price_point.start_point->*judge_price)();
+			const float min_price = (min_price_point.start_point->*judge_price)();
+			//下面一行根据时间决定到底谁是分母
+			const float base_price = max_price_point.start_point->get_date_info() > min_price_point.start_point->get_date_info() ? min_price : max_price;
+			const float wave_percent = (max_price - min_price) / base_price;
 
-        is_pre_up = is_cur_up;
-        info_begin++;
+			//达到了突破界限
+			if (wave_percent > unignore_percent) {
+				//确定突破方向
+				curr_direction = max_price_point.start_point->get_date_info() > min_price_point.start_point->get_date_info() ? Direction::UP : Direction::DOWN;
+
+				//判定一下last_turn_point到突破点之间的时长有多少
+			}
+
+			//判定下是否达到了不能忽视的时间长度，这种情况只能是Direction::LEVEL情形（突破界限上面考虑了）
+			if (last_days > ignore_days) {
+				if(last_definite_turn.start_point == last_turn_point.start_point) {
+					//说明没有确定方向
+					last_definite_turn.next_direction = Direction::LEVEL;
+				}
+				else if(last_definite_turn.next_direction == Direction::LEVEL) {
+					last_turn_point = insert_point;
+				}
+				else {
+					/**
+					 * 说明上一个的已经确定的转折点，其方向不是横盘;
+					 * 那么因为当前是横盘且持续时长超过了忽略界限，需要将改段加入到最终的拆分结果当中
+					 */
+					rst_list.push_back(last_turn_point);
+					last_turn_point = insert_point;
+					max_price_point = min_price_point = last_turn_point;
+					last_days = 0;
+				}
+			}
+		}
+
+		//插入一个新的转折点，确认过是真正的趋势转折点，而不是小幅的无效波动
+
+		++info_begin;
     }
 
+	delete[] slide_win;
 }
 
 std::string Calculator::limit_up_ana(std::list<stock_info>& info_list, int days, PriceFlag buy_price, PriceFlag sold_price) {
@@ -1044,9 +1080,9 @@ std::string Calculator::limit_up_ana(std::list<stock_info>& info_list, int days,
 
     //初始化rst_list
     stock_info* day_before_yesterday = list_begin != list_end ? &(*list_begin) : nullptr;
-    list_begin++;
+    ++list_begin;
     stock_info* yesterday = list_begin != list_end ? &(*list_begin) : nullptr;
-    list_begin++;
+    ++list_begin;
     stock_info* cur_day = nullptr;
 
     stock_info* before_days, *after_days, *buy_day, *sold_day;
