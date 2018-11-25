@@ -72,7 +72,7 @@ public:
         return date_info;
     }
 
-    std::string get_date_info_str() {
+    std::string get_date_info_str() const {
         //返回数据格式: yyyy-MM-dd
         return boost::gregorian::to_iso_extended_string(date_info);
     }
@@ -186,7 +186,7 @@ public:
      * 重載判等操作符，方便用std::find查找列表
      * 只要编码和日期相符就是同一个
      */
-    bool operator==(const stock_info& param) {
+    bool operator==(const stock_info& param) const {
         bool is_equals = true;
         is_equals = is_equals && (date_info == param.date_info);
         is_equals = is_equals && (stock_code == param.stock_code);
@@ -198,7 +198,7 @@ public:
         return is_equals;
     }
 
-    std::string to_string(bool is_brief = true) {
+    std::string to_string(bool is_brief = true) const {
         std::string ret_value;
         ret_value.append(is_brief ? "" : "日期:").append(boost::gregorian::to_iso_extended_string(date_info)).append(",");
         ret_value.append(is_brief ? "" : "代码:").append(stock_code).append(",");
@@ -244,7 +244,7 @@ public:
                                       &stock_info::set_weight_factor};
         for(boost::iterator_range<std::string::iterator> i : v) {
             std::string::iterator s_begin = i.begin(), s_end = i.end();
-            std::string temp_str(s_begin++, s_end++);
+            std::string temp_str(s_begin, s_end);
             switch(count) {
                 case 0:
                     set_date_info(temp_str);

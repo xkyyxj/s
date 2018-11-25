@@ -48,7 +48,7 @@ stock_info PreProcess::pre_process_item(const std::string& input) {
             break;
         }
         std::string::iterator s_begin = i.begin(), s_end = i.end();
-        std::string temp_str(s_begin++, s_end++);
+        std::string temp_str(s_begin, s_end);
         (_stock_info.*fun_array[count])(temp_str);
         count++;
     }

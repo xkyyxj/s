@@ -4,6 +4,8 @@
 
 #include "Calculator.h"
 
+using namespace cassiopeia::stock_analyze::rst_info;
+
 //资源文件内容，暂时由main函数加载
 extern std::map<std::string, std::string> res_map;
 
@@ -863,185 +865,182 @@ std::string Calculator::up_buy(std::list<stock_info>& info_list, std::list<turn_
 }
 
 /**
-* 斜率分析，通过斜率来获取上涨下跌以及相关信息
-* 想了一下，存在一种简单的方式来确定是否上涨后者下跌，如下所述：
-* 1.已经确认的趋势转折点
-* 2.第一后备转折点以及第二后备转折点
-* 第一后备转折点同第二后备转折点分别同趋势转折点计算斜率，如果两斜率之间相差不过10%，那么就算是趋势不变
-*
-*  TODO -- 存在问题，应当同前一天价格比较，来确定是否上升，而不是同上一个高点或低点比较从而确定是否上涨或者下跌
-*  否则会忽略长线当中的短期波动
-*/
-/*void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent) {
-
-//统计数据
-int small_wave_count = 0;
-
-//根据哪个价格来计算斜率
-price_fun cal_price = get_price_fun(price);
-
-stock_info* curr_info, *pre_info;
-auto info_begin = info_list.rbegin(), info_end = info_list.rend();
-
-//初始化
-float un_ig_percent = static_cast<float>(unignore_percent) / 100;
-turn_point temp_turn{};
-temp_turn.start_point = &(*info_begin);
-pre_info = &(*info_begin);
-info_begin++;
-temp_turn.origin_up = ((*info_begin).*cal_price)() > (temp_turn.start_point->*cal_price)();
-turn_point_list.push_back(temp_turn);
-info_begin++;
-
-unsigned int turn_last_days = 0;
-
-while(info_begin != info_end) {
-curr_info = &(*info_begin);
-turn_point& turn_before = turn_point_list.back();
-turn_last_days++;
-
-float cur_price = (curr_info->*cal_price)();
-float turn_before_price = (turn_before.start_point->*cal_price)();
-float slope = (cur_price - turn_before_price) / turn_last_days;
-float percent = (cur_price - turn_before_price) / turn_before_price;
-bool is_up = cur_price > turn_before_price;
-if(is_up && turn_before.origin_up) {
-info_begin++;
-continue;
-}
-else if((!is_up) && (!turn_before.origin_up)) {
-info_begin++;
-continue;
-}
-else if(turn_last_days >= ignore_days || percent >= un_ig_percent){
-turn_point insert_point{};
-insert_point.start_point = curr_info;
-insert_point.origin_up = is_up;
-insert_point.slope = slope;
-insert_point.percent = percent;
-insert_point.wave_days = turn_last_days;
-turn_point_list.push_back(insert_point);
-turn_last_days = 0;
-}
-info_begin++;
-}
-}*/
-
-/**
-* 决定采用滑动窗格的形式分析，滑动窗格当中每一段都当做一段独立的走势分析，从而决定是否与前一段走势相合并
-*
-* TODO -- 如下所示：
-* 1. 突破横跨了两个时间段
-* 2.
-*/
-void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent) {
+ * 决定采用滑动窗格的形式分析，滑动窗格当中每一段都当做一段独立的走势分析，从而决定是否与前一段走势相合并
+ */
+void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent, bool is_precise) {
 
 	auto info_begin = info_list.rbegin();
 	const auto info_end = info_list.rend();
 
-	int slide_len = 0, last_days = 0;
-	turn_point* slide_win = new turn_point[ignore_days];
-	std::list<turn_point> rst_list;
+	int last_days = 0;
+	float* slide_percent = new float[ignore_days];
+	circle_array<stock_info*> circle_info(ignore_days);
+	float* percent = new float[ignore_days];
+
+	float real_percent = static_cast<float>(unignore_percent) / 100;
 
 	const price_fun judge_price = get_price_fun(price);
 
-	stock_info* cur_day_info = nullptr, *pre_day_info = nullptr;
-	int to_max_price_days = 0, to_min_price_days = 0;
-	turn_point max_price_point, min_price_point, last_turn_point;
-
-	//初始化列表
+	stock_info* cur_day_info = nullptr, *start_day_info = nullptr;
+	//初始化操作
 	if (info_begin != info_end) {
 		cur_day_info = &(*info_begin);
-		turn_point init_point{};
-		init_point.start_point = cur_day_info;
-		pre_day_info = cur_day_info;
-		last_turn_point = max_price_point = min_price_point = init_point;
-		++info_begin;
+		circle_info.push_back(cur_day_info);
 	}
 
-
-	bool is_pre_up = false, is_cur_up = false;
-	float slide_max_price = 0, slide_min_price = 0, cur_day_price = 0, pre_day_price = 0;
-	Direction curr_direction;
-	while (info_begin != info_end) {
-		turn_point& last_definite_turn = rst_list.back();
+	while(info_begin != info_end) {
 		++last_days;
 		cur_day_info = &(*info_begin);
-		is_cur_up = (cur_day_info->*judge_price)() > (pre_day_info->*judge_price)();
+		circle_info.push_back(cur_day_info);
 
-		//碰到一个转折点
-		if (is_cur_up ^ is_pre_up) {
-			turn_point insert_point{};
-			insert_point.start_point = pre_day_info;
+		start_day_info = circle_info[0];
+		std::string date_str = start_day_info->get_date_info_str();
+		const char* temp_date = date_str.data();
+		float price_temp = start_day_info->get_begin_price();
+		const float start_price = (start_day_info->*judge_price)();
+		for(size_t i = 1;i < circle_info.size();i++) {
+			const float temp_price = (circle_info[i]->*judge_price)();
+			const Direction break_direction = temp_price > start_price ? Direction::UP : Direction::DOWN;
+			percent[i] = (temp_price - start_price) / start_price;
 
-			if ((max_price_point.start_point->*judge_price)() < (pre_day_info->*judge_price)()) {
-				to_max_price_days = last_days;
-				max_price_point = insert_point;
-			}
+			//判定一下是否达到了突破百分比
+			if(percent[i] >= real_percent || percent[i] <= -real_percent) {
+				//已经突破
+				const bool is_first_point = turn_point_list.empty();
 
-			if ((min_price_point.start_point->*judge_price)() > (pre_day_info->*judge_price)()) {
-				to_min_price_days = last_days;
-				min_price_point = insert_point;
-			}
-
-			//判定一下最大峰值与最小峰值之间是否达到了不能忽视的波动幅度
-			const float max_price = (max_price_point.start_point->*judge_price)();
-			const float min_price = (min_price_point.start_point->*judge_price)();
-			//下面一行根据时间决定到底谁是分母
-			const float base_price = max_price_point.start_point->get_date_info() > min_price_point.start_point->get_date_info() ? min_price : max_price;
-			const float wave_percent = (max_price - min_price) / base_price;
-
-			//达到了突破界限
-			if (wave_percent > unignore_percent) {
-				//确定突破方向
-				curr_direction = max_price_point.start_point->get_date_info() > min_price_point.start_point->get_date_info() ? Direction::UP : Direction::DOWN;
-
-				//是否与last_definite_turn方向一致
-				if (curr_direction == last_definite_turn.next_direction) {
-					last_turn_point = insert_point;
-				}
-				//突破方向不一致，需要将改段突破加入到最终结果集当中
-				else {
-					if (curr_direction == Direction::UP) {
-						min_price_point.percent = -wave_percent;
-						rst_list.push_back(min_price_point);
+				//如果已经突破，那么看下是不是最高点
+				if (!is_first_point) {
+					turn_point& last_definite_point = turn_point_list.back();
+					if(break_direction == Direction::UP && last_definite_point.next_direction != break_direction && is_precise) {
+						if(1 < circle_info.size()) {
+							stock_info* temp_stock = circle_info[1];
+							if((break_direction == Direction::DOWN && (temp_stock->*judge_price)() >= (start_day_info->*judge_price)())
+								|| (break_direction == Direction::UP && (temp_stock->*judge_price)() <= (start_day_info->*judge_price)())) {
+								/**
+								 * 这种情况下可以直接跳到下一天分析了，原因如下：
+								 * 突破方向向上，预备当做走势转折点的这一天，其后一天的价格更低，
+								 * 如果是需要精确点的话，可以将该天归到上一段趋势当中
+								 * 
+								 * 对于向下突破也是同样的理由
+								 */
+								break;
+							}
+						}
 					}
-					else {
-						max_price_point.percent = wave_percent;
-						rst_list.push_back(max_price_point);
-					}
-				}
-				//判定一下last_turn_point到突破点之间的时长有多少
-			}
 
-			//判定下是否达到了不能忽视的时间长度，这种情况只能是Direction::LEVEL情形（突破界限上面考虑了）
-			if (last_days > ignore_days) {
-				if (last_definite_turn.start_point == last_turn_point.start_point) {
-					//说明没有确定方向
-					last_definite_turn.next_direction = Direction::LEVEL;
-				}
-				else if (last_definite_turn.next_direction == Direction::LEVEL) {
-					last_turn_point = insert_point;
-				}
-				else {
 					/**
-					* 说明上一个的已经确定的转折点，其方向不是横盘;
-					* 那么因为当前是横盘且持续时长超过了忽略界限，需要将改段加入到最终的拆分结果当中
-					*/
-					rst_list.push_back(last_turn_point);
-					last_turn_point = insert_point;
-					max_price_point = min_price_point = last_turn_point;
-					last_days = 0;
+					 * 还存在另外一种情况：
+					 * 2007-05-14往后的ignore_days当中被判定为向下突破，其后一天（即05-15）也被判定为向下突破，
+					 * 那么上面突破的代码段当中05-15不会被重复加入到结果集当中，最终导致这边被判定为横盘
+					 * 下面的代码进行一下纠正，让这段相同的趋势度过去
+					 */
+					if(last_definite_point.next_direction == break_direction) {
+						break;
+					}
+				}
+
+				if(is_first_point) {
+					turn_point insert_point{};
+					insert_point.start_point = start_day_info;
+					insert_point.next_direction = break_direction;
+					turn_point_list.push_back(insert_point);
+				}
+				else {
+					turn_point& last_definite_point = turn_point_list.back();
+					if(last_definite_point.next_direction != break_direction && last_definite_point.start_point != start_day_info) {
+						/**
+						* 同上一个转折点的突破方向不一致
+						*
+						* 前提是start_day_info没有加入到结果列表当中
+						* 存在一种情况：该段时间内，存在价格急剧上升然后下降，导致@param ignore_days之内存在两种走势
+						*/
+						turn_point insert_point{};
+						insert_point.start_point = start_day_info;
+						insert_point.next_direction = break_direction;
+						turn_point_list.push_back(insert_point);
+
+						//需要重新计算上一个转折点的斜率以及突破百分比等信息
+						const float last_definite_price = (last_definite_point.start_point->*judge_price)();
+						last_definite_point.percent = (start_price - last_definite_price) / last_definite_price;
+						last_definite_point.wave_days = last_days;
+						last_definite_point.slope = last_definite_point.percent / last_definite_point.wave_days;
+						last_days = 0;
+					}
+				}
+			}
+			//下面这行说明时长到了不能忽视的天数之后，仍然未突破，作横盘处理
+			else if(i == ignore_days - 1) {
+				const bool is_first_point = turn_point_list.empty();
+				if (!is_first_point) {
+					turn_point& last_definite_point = turn_point_list.back();
+					/**
+					 * 加了个判定条件：last_definite_point.start_point != start_day_info
+					 * 避免上面@param unignore_days当中某一天已经突破了，但是期间最后一天价格回落导致下面代码判定为横盘
+					 */
+					if(last_definite_point.next_direction != Direction::LEVEL && last_definite_point.start_point != start_day_info) {
+						turn_point insert_point{};
+						insert_point.start_point = start_day_info;
+						insert_point.next_direction = Direction::LEVEL;
+						turn_point_list.push_back(insert_point);
+
+						//需要重新计算上一个转折点的斜率以及突破百分比等信息
+						const float last_definite_price = (last_definite_point.start_point->*judge_price)();
+						last_definite_point.percent = (start_price - last_definite_price) / last_definite_price;
+						last_definite_point.wave_days = last_days;
+						last_definite_point.slope = last_definite_point.percent / last_definite_point.wave_days;
+						last_days = 0;
+					}
+				}
+				else {
+					turn_point insert_point{};
+					insert_point.start_point = start_day_info;
+					insert_point.next_direction = Direction::LEVEL;
+					turn_point_list.push_back(insert_point);
 				}
 			}
 		}
-
-		//插入一个新的转折点，确认过是真正的趋势转折点，而不是小幅的无效波动
-		is_pre_up = is_cur_up;
 		++info_begin;
 	}
 
-	delete[] slide_win;
+	//得到所有的转折点之后，考虑将数个连接的Direction::LEVEL的段合并起来，看是否是慢速上涨或者是慢速下跌
+	//auto rst_begin = turn_point_list.begin();
+	//const auto rst_end = turn_point_list.end();
+	//bool has_level_section = false;
+	//auto start_level_posi = rst_begin;
+	//std::list<turn_point>::iterator pre_turn_point;
+	//last_days = 0;
+	//while(rst_begin != rst_end) {
+	//	turn_point& curr_turn = *rst_begin;
+
+	//	if(!has_level_section) {
+	//		has_level_section = curr_turn.next_direction == Direction::LEVEL;
+	//		start_level_posi = rst_begin;
+	//		pre_turn_point = rst_begin;
+	//	}
+
+	//	if(has_level_section && start_level_posi != rst_begin) {
+	//		last_days += pre_turn_point->wave_days;
+	//		turn_point& pre_turn_val = *pre_turn_point;
+	//		const float start_price = (start_level_posi->start_point->*judge_price)();
+	//		const float cur_turn_price = (curr_turn.start_point->*judge_price)();
+	//		const float percent_val = (cur_turn_price - start_price) / start_price;
+	//		if(curr_turn.next_direction != Direction::LEVEL) {
+	//			has_level_section = false;
+	//			//重新设定一下方向等信息，当突破了不能忽视的百分比的时候
+	//			if(percent_val > unignore_percent || percent_val < -unignore_percent) {
+	//				start_level_posi->percent = percent_val;
+	//				start_level_posi->next_direction = cur_turn_price > start_price ? Direction::SLOW_UP : Direction::SLOW_DOWN;
+	//				start_level_posi->wave_days = last_days;
+	//				start_level_posi->slope = percent_val / last_days;
+	//				last_days = 0;
+	//			}
+	//		}
+	//	}
+
+	//	++rst_begin;
+	//}
+
+	delete[] percent;
 }
 
 std::string Calculator::limit_up_ana(std::list<stock_info>& info_list, int days, PriceFlag buy_price, PriceFlag sold_price) {
