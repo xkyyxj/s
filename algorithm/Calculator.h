@@ -40,7 +40,7 @@ public:
     int get_up_range() {return max_price - min_price;}
     void prbality_analy(std::list<stock_info> &);
 
-    void slope_ana(std::list<stock_info>&, std::list<cassiopeia::stock_analyze::rst_info::turn_point>&, 
+    void section_ana(std::list<stock_info>&, std::list<cassiopeia::stock_analyze::rst_info::turn_point>&,
 		PriceFlag = PriceFlag::END_PRICE, int = 7, int = 8, bool = true);
 
     std::string buy_interest_ana(std::list<stock_info> &, int = 7, std::string = "0000-00-00",
@@ -57,6 +57,9 @@ public:
 
     //换种考虑方式，如果是连续三天上涨
     std::string up_buy(std::list<stock_info>&, std::list<cassiopeia::stock_analyze::rst_info::turn_point>&, int = 10, int = 7, PriceFlag = PriceFlag::BEGIN_PRICE, PriceFlag = PriceFlag::END_PRICE);
+
+	//将上涨下跌的趋势考虑进来，结合动能突破的思路
+	std::string kenetic_energy_ana(std::list<stock_info>&, std::list<cassiopeia::stock_analyze::rst_info::turn_point>&);
 
 private:
     std::map<int,float> probalityDist;

@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
 	std::ofstream output_file(output_file_name);
 	Calculator calculator;
 	std::list<rst_info::turn_point> rst_list;
-	calculator.slope_ana(stock_list, rst_list);
+	calculator.section_ana(stock_list, rst_list);
 	auto rst_begin = rst_list.begin();
 	const auto rst_end = rst_list.end();
 	output_file << rst_info::turn_point::to_csv_head();

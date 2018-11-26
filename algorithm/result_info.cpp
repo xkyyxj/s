@@ -14,6 +14,11 @@ std::ostream& rst_info::operator<<(std::ostream& output, const rst_info::turn_po
     return output;
 }
 
+std::ostream& operator<<(std::ostream& output, const rst_info::buy_rst& _point) {
+	output << _point.to_csv_string();
+	return output;
+}
+
 std::string rst_info::turn_point::to_csv_head() {
 	std::string ret_value;
 	ret_value.append(res_map["100000CH00001"]/*日期*/).append(",");

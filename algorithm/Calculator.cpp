@@ -789,7 +789,7 @@ std::string Calculator::up_buy(std::list<stock_info>& info_list, std::list<turn_
 /**
  * 决定采用滑动窗格的形式分析，滑动窗格当中每一段都当做一段独立的走势分析，从而决定是否与前一段走势相合并
  */
-void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent, bool is_precise) {
+void Calculator::section_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_point_list, PriceFlag price, int ignore_days, int unignore_percent, bool is_precise) {
 
 	auto info_begin = info_list.rbegin();
 	const auto info_end = info_list.rend();
@@ -1187,5 +1187,48 @@ void Calculator::calculate_ma(std::list<stock_info>& info_list) {
 			}
 		}
 		l_be++;
+	}
+}
+
+std::string Calculator::kenetic_energy_ana(std::list<stock_info>& info_list, std::list<turn_point>& turn_list) {
+	auto info_begin = info_list.begin();
+	const auto info_end = info_list.end();
+
+	//初始化操作
+	turn_point curr_turn, pre_turn;
+	boost::gregorian::date sec_end_date;
+	Direction curr_direction;
+	auto turn_begin = turn_list.begin();
+	const auto turn_end = turn_list.end();
+	//寻找接连两段，上一段是下降，下一段是横盘的趋势
+	if(turn_begin != turn_end) {
+		pre_turn = *turn_begin;
+		++turn_begin;
+	}
+	while(turn_begin != turn_end) {
+		curr_turn = *turn_begin;
+		if(pre_turn.next_direction == Direction::DOWN && curr_turn.next_direction == Direction::LEVEL) {
+			++turn_begin;
+			sec_end_date = (*turn_begin).start_point->get_date_info();
+			curr_direction = curr_turn.next_direction;
+			break;
+		}
+		pre_turn = curr_turn;
+		++turn_begin;
+	}
+
+	while(info_begin != info_end) {
+		stock_info* curr = &(*info_begin);
+
+		if(curr->get_date_info() > sec_end_date) {
+			curr_turn = *turn_begin;
+			sec_end_date = curr_turn.start_point->get_date_info();
+			curr_direction = curr_turn.next_direction;
+		}
+
+		//横盘或者上升，然后看下是否存在动能突破
+		if(curr_direction == Direction::LEVEL || curr_direction == Direction::UP) {
+			
+		}
 	}
 }
