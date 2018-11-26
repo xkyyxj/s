@@ -111,21 +111,23 @@ float PreProcess::set_stoinfo_weifactor(std::list<stock_info>& stock_info, std::
     float temp_weight_factor = 0;
     while(stock_info_begin_ite != stock_info_end_ite) {
         if((*stock_info_begin_ite).get_date_info_str().compare((*weight_info_begin_ite).substr(0,10)) > 0) {
-            stock_info_begin_ite++;
+			//某些情况下，即使没有停牌的，但是这只股票的复权因子信息还是没有，这种情况下取前一天的复权因子信息
+			(*stock_info_begin_ite).set_weight_factor(temp_weight_factor);
+            ++stock_info_begin_ite;
         }
-            /**
-             * 平高电气当中检测到一种情况：
-             * 可能股票若干天停牌，获取股票基本信息是是有内容的，但是股票的复权因子查询当中没有停牌这些天的信息
-             */
+        /**
+         * 平高电气当中检测到一种情况：
+         * 可能股票若干天停牌，获取股票基本信息是是有内容的，但是股票的复权因子查询当中没有停牌这些天的信息
+         */
         else if((*stock_info_begin_ite).get_date_info_str().compare((*weight_info_begin_ite).substr(0,10)) < 0) {
-            weight_info_begin_ite++;
+            ++weight_info_begin_ite;
         }
         else {
             temp_weight_factor = std::strtof((*weight_info_begin_ite).substr(11).data(), nullptr); //截取到最后，即得复权因子,然后转为float
             max_weight_factor = temp_weight_factor > max_weight_factor ? temp_weight_factor : max_weight_factor;
             (*stock_info_begin_ite).set_weight_factor(temp_weight_factor);
-            stock_info_begin_ite++;
-            weight_info_begin_ite++;
+            ++stock_info_begin_ite;
+            ++weight_info_begin_ite;
         }
         //加个特殊判定，虽然可能永远不会走，亦即复权因子信息耗尽了（基本信息和复权因子信息匹配不上）
         if(weight_info_begin_ite == weight_info_end_ite) {
@@ -140,6 +142,8 @@ std::string PreProcess::process_weight_item(const std::string& item) {
     std::string ret_result;
     if(item.length() > 0) {
         ret_result.append(item.substr(0,10));
+		std::string temp_value = item.substr(0, 10);
+		const char* value_char = temp_value.data();
         ret_result.append("_");
         size_t b_index = item.rfind("er\">");
         size_t e_index = item.rfind("</div>");

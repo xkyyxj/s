@@ -895,8 +895,6 @@ void Calculator::slope_ana(std::list<stock_info>& info_list, std::list<turn_poin
 
 		start_day_info = circle_info[0];
 		std::string date_str = start_day_info->get_date_info_str();
-		const char* temp_date = date_str.data();
-		float price_temp = start_day_info->get_begin_price();
 		const float start_price = (start_day_info->*judge_price)();
 		for(size_t i = 1;i < circle_info.size();i++) {
 			const float temp_price = (circle_info[i]->*judge_price)();
