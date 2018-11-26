@@ -41,7 +41,37 @@ namespace cassiopeia {
 				static std::string to_csv_head();
 			};
 
-			std::ostream& operator<<(std::ostream& output, const rst_info::turn_point& _point);
+			class  buy_rst {
+			public:
+				stock_info* base_info = nullptr;
+				//base_info当天最高价买入，然后@param days那一天以收盘价卖出收益率
+				float days_percent = 0;
+				//base_info当天最高价买入，@param days天之间最高的收益率如何（收盘价计算收益率）
+				float max_win_percent = 0;
+				//base_info当天最高价买入，@param days天之间最高的损失率如何（收盘价计算收益率）
+				float max_lost_percent = 0;
+				//实现@param days天当中最大收益率，是在买入多少天后实现的？（非交易日不算入天数当中）
+				int to_max_win_days = 0;
+				//辅助上面的非交易日不算入天数当中而添加的变量
+				int lower_max_win_days = 0;
+				//实现@param days天过程当汇总最大收益率的那天的基本信息
+				stock_info* mid_max_win_info = nullptr;
+				//在历经@param days这些天当中，如能获利，则为true
+				bool mid_has_up = false;
+				//计量在base_info天买进的话，已经往后计算了多少天的收益
+				int cal_days_count = 0;
+
+				//将单条记录转换成scv格式记录
+				std::string to_csv_string() const;
+
+				//输出scv文件头
+				static std::string to_csv_head();
+
+			};
+
+			std::ostream& operator<<(std::ostream& output, const turn_point& _point);
+
+			std::ostream& operator<<(std::ostream& output, const buy_rst& _point);
 		}
 	}
 }

@@ -467,25 +467,7 @@ std::string Calculator::buy_interest_ana(std::list<stock_info> &info_list, int d
 * 特定的买入模式分析收益率如何,下降@param down_days天之后买入的效果如何，其余的和buy_interest_ana类似
 */
 std::string Calculator::patter_buy(std::list<stock_info>& info_list, int down_days, int days, PriceFlag buy_price, PriceFlag sold_price) {
-	struct buy_rst {
-		stock_info* base_info = nullptr;
-		//base_info当天最高价买入，然后@param days那一天以收盘价卖出收益率
-		float days_percent = 0;
-		//base_info当天最高价买入，@param days天之间最高的收益率如何（收盘价计算收益率）
-		float max_win_percent = 0;
-		//base_info当天最高价买入，@param days天之间最高的损失率如何（收盘价计算收益率）
-		float max_lost_percent = 0;
-		//实现@param days天当中最大收益率，是在买入多少天后实现的？（非交易日不算入天数当中）
-		int to_max_win_days = 0;
-		//辅助上面的非交易日不算入天数当中而添加的变量
-		int lower_max_win_days = 0;
-		//实现@param days天过程当汇总最大收益率的那天的基本信息
-		stock_info* mid_max_win_info = nullptr;
-		//在历经@param days这些天当中，如能获利，则为true
-		bool mid_has_up = false;
-		//计量在base_info天买进的话，已经往后计算了多少天的收益
-		int cal_days_count = 0;
-	};
+	using cassiopeia::stock_analyze::rst_info::buy_rst;
 
 	//统计信息
 	int total_days = 0; //总天数，可能有部分天不盈利也不损失
@@ -606,36 +588,15 @@ std::string Calculator::patter_buy(std::list<stock_info>& info_list, int down_da
 
 	//构建输出信息，csv格式
 	std::string output_str;
-	//下面几个字段按照顺序分别是：
-	//日期,编码,名称,除权开盘价,除权收盘价,除权最高价,除权最低价,目标日盈利百分比,中间最大盈利百分比,中间最大损失百分比
-	//中间最大盈利所需天数,中间是否盈利
-	output_str.append(res_map["100000CH00001"]).append(",").append(res_map["100000CH00002"]).append(",");
-	output_str.append(res_map["100000CH00003"]).append(",").append(res_map["100000CH00004"]).append(",");
-	output_str.append(res_map["100000CH00005"]).append(",").append(res_map["100000CH00006"]).append(",");
-	output_str.append(res_map["100000CH00007"]).append(",").append(res_map["100000CH00018"]).append(",");
-	output_str.append(res_map["100000CH00019"]).append(",").append(res_map["100000CH00020"]).append(",");
-	output_str.append(res_map["100000CH00021"]).append(",").append(res_map["100000CH00022"]).append(",");
-	output_str.append("\n");
+	output_str.append(buy_rst::to_csv_head());
 	rst_begin = rst_list.begin(), rst_end = rst_list.end();
 	while (rst_begin != rst_end) {
 		buy_rst& rst_info = (*rst_begin);
 		//统计一下相关信息,@param days的中间历程当中是否上涨过
 		rst_info.mid_has_up ? mid_up_days_num++ : mid_down_days_num++;
 
-		output_str.append(rst_info.base_info->get_date_info_str()).append(",");
-		output_str.append(rst_info.base_info->get_stock_code()).append(",");
-		output_str.append(rst_info.base_info->get_stock_name()).append(",");
-		output_str.append(std::to_string(rst_info.base_info->get_begin_price())).append(",");
-		output_str.append(std::to_string(rst_info.base_info->get_end_price())).append(",");
-		output_str.append(std::to_string(rst_info.base_info->get_max_price())).append(",");
-		output_str.append(std::to_string(rst_info.base_info->get_min_price())).append(",");
-		output_str.append(std::to_string(rst_info.days_percent * 100)).append("%,");
-		output_str.append(std::to_string(rst_info.max_win_percent * 100)).append("%,");
-		output_str.append(std::to_string(rst_info.max_lost_percent * 100)).append("%,");
-		output_str.append(std::to_string(rst_info.to_max_win_days)).append(",");
-		output_str.append(rst_info.mid_has_up ? "Y" : "N").append(",");
-		output_str.append("\n");
-		rst_begin++;
+		output_str.append(rst_info.to_csv_string());
+		++rst_begin;
 	}
 
 	//输出统计信息到字符串当中
@@ -662,25 +623,7 @@ std::string Calculator::patter_buy(std::list<stock_info>& info_list, int down_da
 * 需要关注的是这个过程当中
 */
 std::string Calculator::up_buy(std::list<stock_info>& info_list, std::list<turn_point>& turn_list, int up_percent, int days, PriceFlag buy_price, PriceFlag sold_price) {
-	struct buy_rst {
-		stock_info* base_info = nullptr;
-		//base_info当天最高价买入，然后@param days那一天以收盘价卖出收益率
-		float days_percent = 0;
-		//base_info当天最高价买入，@param days天之间最高的收益率如何（收盘价计算收益率）
-		float max_win_percent = 0;
-		//base_info当天最高价买入，@param days天之间最高的损失率如何（收盘价计算收益率）
-		float max_lost_percent = 0;
-		//实现@param days天当中最大收益率，是在买入多少天后实现的？（非交易日不算入天数当中）
-		int to_max_win_days = 0;
-		//辅助上面的非交易日不算入天数当中而添加的变量
-		int lower_max_win_days = 0;
-		//实现@param days天过程当汇总最大收益率的那天的基本信息
-		stock_info* mid_max_win_info = nullptr;
-		//在历经@param days这些天当中，如能获利，则为true
-		bool mid_has_up = false;
-		//计量在base_info天买进的话，已经往后计算了多少天的收益
-		int cal_days_count = 0;
-	};
+	using cassiopeia::stock_analyze::rst_info::buy_rst;
 
 	//统计信息
 	int total_days = 0; //总天数，可能有部分天不盈利也不损失
@@ -815,36 +758,15 @@ std::string Calculator::up_buy(std::list<stock_info>& info_list, std::list<turn_
 
 	//构建输出信息，csv格式
 	std::string output_str;
-	//下面几个字段按照顺序分别是：
-	//日期,编码,名称,除权开盘价,除权收盘价,除权最高价,除权最低价,目标日盈利百分比,中间最大盈利百分比,中间最大损失百分比
-	//中间最大盈利所需天数,中间是否盈利
-	output_str.append(res_map["100000CH00001"]).append(",").append(res_map["100000CH00002"]).append(",");
-	output_str.append(res_map["100000CH00003"]).append(",").append(res_map["100000CH00004"]).append(",");
-	output_str.append(res_map["100000CH00005"]).append(",").append(res_map["100000CH00006"]).append(",");
-	output_str.append(res_map["100000CH00007"]).append(",").append(res_map["100000CH00018"]).append(",");
-	output_str.append(res_map["100000CH00019"]).append(",").append(res_map["100000CH00020"]).append(",");
-	output_str.append(res_map["100000CH00021"]).append(",").append(res_map["100000CH00022"]).append(",");
-	output_str.append("\n");
+	output_str.append(buy_rst::to_csv_head());
 	rst_begin = rst_list.begin(), rst_end = rst_list.end();
 	while (rst_begin != rst_end) {
 		buy_rst& rst_info = (*rst_begin);
 		//统计一下相关信息,@param days的中间历程当中是否上涨过
 		rst_info.mid_has_up ? mid_up_days_num++ : mid_down_days_num++;
 
-		output_str.append(rst_info.base_info->get_date_info_str()).append(",");
-		output_str.append(rst_info.base_info->get_stock_code()).append(",");
-		output_str.append(rst_info.base_info->get_stock_name()).append(",");
-		output_str.append(std::to_string(rst_info.base_info->get_begin_price())).append(",");
-		output_str.append(std::to_string(rst_info.base_info->get_end_price())).append(",");
-		output_str.append(std::to_string(rst_info.base_info->get_max_price())).append(",");
-		output_str.append(std::to_string(rst_info.base_info->get_min_price())).append(",");
-		output_str.append(std::to_string(rst_info.days_percent * 100)).append("%,");
-		output_str.append(std::to_string(rst_info.max_win_percent * 100)).append("%,");
-		output_str.append(std::to_string(rst_info.max_lost_percent * 100)).append("%,");
-		output_str.append(std::to_string(rst_info.to_max_win_days)).append(",");
-		output_str.append(rst_info.mid_has_up ? "Y" : "N").append(",");
-		output_str.append("\n");
-		rst_begin++;
+		output_str.append(rst_info.to_csv_string());
+		++rst_begin;
 	}
 
 	//输出统计信息到字符串当中

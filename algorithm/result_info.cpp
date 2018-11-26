@@ -65,3 +65,39 @@ std::string rst_info::turn_point::to_csv_string() const {
 
     return ret_value;
 }
+
+std::string rst_info::buy_rst::to_csv_head() {
+	//构建输出信息，csv格式
+	std::string output_str;
+	//下面几个字段按照顺序分别是：
+	//日期,编码,名称,除权开盘价,除权收盘价,除权最高价,除权最低价,目标日盈利百分比,中间最大盈利百分比,中间最大损失百分比
+	//中间最大盈利所需天数,中间是否盈利
+	output_str.append(res_map["100000CH00001"]).append(",").append(res_map["100000CH00002"]).append(",");
+	output_str.append(res_map["100000CH00003"]).append(",").append(res_map["100000CH00004"]).append(",");
+	output_str.append(res_map["100000CH00005"]).append(",").append(res_map["100000CH00006"]).append(",");
+	output_str.append(res_map["100000CH00007"]).append(",").append(res_map["100000CH00018"]).append(",");
+	output_str.append(res_map["100000CH00019"]).append(",").append(res_map["100000CH00020"]).append(",");
+	output_str.append(res_map["100000CH00021"]).append(",").append(res_map["100000CH00022"]).append(",");
+	output_str.append("\n");
+
+	return output_str;
+}
+
+std::string rst_info::buy_rst::to_csv_string() const {
+	std::string output_str;
+	output_str.append(base_info->get_date_info_str()).append(",");
+	output_str.append(base_info->get_stock_code()).append(",");
+	output_str.append(base_info->get_stock_name()).append(",");
+	output_str.append(std::to_string(base_info->get_begin_price())).append(",");
+	output_str.append(std::to_string(base_info->get_end_price())).append(",");
+	output_str.append(std::to_string(base_info->get_max_price())).append(",");
+	output_str.append(std::to_string(base_info->get_min_price())).append(",");
+	output_str.append(std::to_string(days_percent * 100)).append("%,");
+	output_str.append(std::to_string(max_win_percent * 100)).append("%,");
+	output_str.append(std::to_string(max_lost_percent * 100)).append("%,");
+	output_str.append(std::to_string(to_max_win_days)).append(",");
+	output_str.append(mid_has_up ? "Y" : "N").append(",");
+	output_str.append("\n");
+
+	return output_str;
+}
