@@ -4,7 +4,10 @@
 #include "data_fetch/DataCenter.h"
 #include "./algorithm/Calculator.h"
 #include <fstream>
+#include <gtk/gtk.h>
 #include <boost/filesystem.hpp>
+#include <hiredis.h>
+#include "ui/ui_main.h"
 std::map<std::string,std::string> res_map;
 #ifdef WINDOWS_PLATFORM
 #define DllExport __declspec( dllexport )//宏定义
@@ -22,9 +25,98 @@ DllExport std::string get_str() {
 
 #else
 
+static void print_hello(GtkWidget* widget, gpointer data) {
+	std::cout << "Hello C++ & GTK+" << std::endl;
+}
+
+static void
+activate(GtkApplication* app,
+	gpointer        user_data)
+{
+	GtkWidget* window;
+	GtkWidget* button;
+	GtkWidget* button_box;
+
+	window = gtk_application_window_new(app);
+	gtk_window_set_title(GTK_WINDOW(window), "Window");
+	gtk_window_set_default_size(GTK_WINDOW(window), 200, 200);
+
+	button_box = gtk_button_box_new(GTK_ORIENTATION_HORIZONTAL);
+	gtk_container_add(GTK_CONTAINER(window), button_box);
+
+	button = gtk_button_new_with_label("Hello World");
+	g_signal_connect(button, "clicked", G_CALLBACK(print_hello), NULL);
+	g_signal_connect_swapped(button, "clicked", G_CALLBACK(gtk_widget_destroy), window);
+	gtk_container_add(GTK_CONTAINER(button_box), button);
+	gtk_widget_show_all(window);
+}
+
 int main(int argc, char* argv[]) {
 
-	namespace rst_info = cassiopeia::stock_analyze::rst_info;
+	//redis默认监听端口为6379 可以再配置文件中修改
+	//redisContext* c = redisConnect("127.0.0.1", 6379);
+	//if (c->err)
+	//{
+	//	redisFree(c);
+	//	printf("Connect to redisServer faile\n");
+	//	//强制退出
+	//	MessageBox(NULL, TEXT("redis连接失败，服务端即将退出，请先启动redis!"), TEXT("提示"), MB_ICONWARNING);
+	//	exit(0);
+	//	return NULL;
+	//}
+	//printf("Connect to redisServer Success\n");
+	//void* reply = redisCommand(c, "SET foo bar");
+
+	ui_main main_ui(argc, argv);
+	/*GVariantDict* dict = g_variant_dict_new(NULL);
+	g_variant_dict_insert(dict, "num1", "d", 123);
+	unsigned int num = 0;
+	g_variant_dict_lookup(dict, "num1", "d", &num);
+	std::cout << num << std::endl;
+	g_variant_dict_unref(dict);
+
+	GVariantDict dict2;
+	g_variant_dict_init(&dict2, NULL);
+	g_variant_dict_insert(&dict2, "num2", "u", 234234);
+	g_variant_dict_lookup(&dict2, "num2", "u", &num);
+	std::cout << num << std::endl;*/
+
+	/*GVariantBuilder* b;
+	GVariant* dict;
+
+	b = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+	g_variant_builder_add(b, "{sv}", "name", g_variant_new_string("foo"));
+	g_variant_builder_add(b, "{sv}", "timeout", g_variant_new_int32(10));
+	dict = g_variant_builder_end(b);
+
+
+	b = g_variant_builder_new(G_VARIANT_TYPE("a{sv}"));
+	g_variant_builder_add(b, "{sv}", "name", g_variant_new_double(123));
+	g_variant_builder_add(b, "{sv}", "timeout", g_variant_new_double(7777));
+	dict = g_variant_builder_end(b);*/
+
+	/*b = g_variant_builder_new(G_VARIANT_TYPE("a{ss}"));
+	g_variant_builder_add(b, "{ss}", "name", "heihei");
+	g_variant_builder_add(b, "{ss}", "timeout", "haha");
+	dict = g_variant_builder_end(b);*/
+
+	//GVariant* temp_char = NULL;
+	/*gchar* temp_char;
+	g_variant_lookup(dict, "name", "s", &temp_char);*/
+	///*gsize size = 3;
+	//const gchar* rel_char = g_variant_get_string(temp_char, &size);*/
+
+	/*gdouble temp_char = 0;
+	GVariant* ret_val = g_variant_lookup_value(dict, "name", G_VARIANT_TYPE_DOUBLE);
+	gdouble d = g_variant_get_double(ret_val);*/
+	/*gdouble d = 0;
+	g_variant_lookup(dict, "name", "d", &d);*/
+	//g_variant_unref(ret_val);
+	//std::cout << d << std::endl;
+
+
+	return 0;
+	/*namespace rst_info = cassiopeia::stock_analyze::rst_info;
     using rst_info::operator<<;
 
 	const std::string root_dir(ROOT_DIR);
@@ -62,7 +154,7 @@ int main(int argc, char* argv[]) {
 	while(rst_begin != rst_end) {
 		output_file << *rst_begin;
 		++rst_begin;
-	}
+	}*/
 
 	return 0;
 }

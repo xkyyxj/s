@@ -1231,4 +1231,6 @@ std::string Calculator::kenetic_energy_ana(std::list<stock_info>& info_list, std
 			
 		}
 	}
+
+	return std::string("123213213");
 }
