@@ -3,4 +3,4 @@ project(123)
 
 set(CMAKE_CXX_STANDARD 14)
 aux_source_directory(. DIR_LIB_SRCS)
-add_library(stock_base_info ${DIR_LIB_SRCS} stock_info.cpp)
+add_library(stock_base_info ${DIR_LIB_SRCS} stock_info.cpp stock_index_info.cpp stock_index_info.h)

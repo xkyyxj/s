@@ -1,13 +1,18 @@
 ﻿#include <iostream>
-#include "data_fetch/DataFetch.h"
-#include "data_fetch/PreProcess.h"
-#include "data_fetch/DataCenter.h"
+#include "data_center/DataFetch.h"
+#include "data_center/PreProcess.h"
+#include "data_center/DataCenter.h"
 #include "./algorithm/Calculator.h"
 #include <fstream>
 #include <gtk/gtk.h>
+#include <boost/asio.hpp>
 #include <boost/filesystem.hpp>
-#include <hiredis.h>
+#include <boost/thread.hpp>
+#include "data_center/time_index_fetch.h"
+#include <boost/smart_ptr.hpp>
+//#include <hiredis.h>
 #include "ui/ui_main.h"
+#include "data_center/data_base_ope.h"
 std::map<std::string,std::string> res_map;
 #ifdef WINDOWS_PLATFORM
 #define DllExport __declspec( dllexport )//宏定义
@@ -27,6 +32,7 @@ DllExport std::string get_str() {
 
 static void print_hello(GtkWidget* widget, gpointer data) {
 	std::cout << "Hello C++ & GTK+" << std::endl;
+	boost::shared_ptr<int*> shared_prt;
 }
 
 static void
@@ -51,7 +57,26 @@ activate(GtkApplication* app,
 	gtk_widget_show_all(window);
 }
 
+
+void print_hello_1(const boost::system::error_code& /*e*/) {
+	std::cout << "12312" << std::endl;
+}
+
+void get_stock_index_info() {
+	time_index_fetch _fetch;
+	//std::string ret_val = _fetch.get_http_by_beast();
+}
+
 int main(int argc, char* argv[]) {
+
+	/*boost::asio::io_context io;
+	boost::asio::steady_timer t(io, boost::asio::chrono::seconds(5));
+	t.async_wait(&print_hello_1);
+	io.run();*/
+
+	/*time_index_fetch _fetch;
+	boost::thread th(_fetch);
+	boost::this_thread::sleep_for(boost::chrono::seconds(10));*/
 
 	//redis默认监听端口为6379 可以再配置文件中修改
 	//redisContext* c = redisConnect("127.0.0.1", 6379);
@@ -114,7 +139,9 @@ int main(int argc, char* argv[]) {
 	//g_variant_unref(ret_val);
 	//std::cout << d << std::endl;
 
-
+	/*data_base_ope ope(std::string("127.0.0.1"), std::string("3306"), std::string("root"), std::string("123"));
+	std::string qry_sql("select * from stock_base_info where ts_code='000001.SZ' and trade_date='20190417'");
+	ope.execute_query(qry_sql);*/
 	return 0;
 	/*namespace rst_info = cassiopeia::stock_analyze::rst_info;
     using rst_info::operator<<;

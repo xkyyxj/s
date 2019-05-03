@@ -4,14 +4,14 @@
 static GParamSpec* obj_properties[P_LENGTH] = { NULL, };
 
 static gboolean k_line_draw(GtkWidget* widget, cairo_t* cr);
-//static void gtk_entry_size_allocate(GtkWidget* widget, GtkAllocation* allocation);
-//static void gtk_k_line_get_preferred_width(GtkWidget* widget, gint* minimum_width, gint* natural_width);
-//static void gtk_k_line_get_preferred_height(GtkWidget* widget, gint* minimum_height, gint* natural_height);
+static void gtk_k_line_get_preferred_width(GtkWidget* widget, gint* minimum_width, gint* natural_width);
+static void gtk_k_line_get_preferred_height(GtkWidget* widget, gint* minimum_height, gint* natural_height);
 
 static void k_line_set_property(GObject* object, guint property_id, const GValue* value, GParamSpec* pspec);
 static void k_line_get_property(GObject* object, guint property_id, GValue* value, GParamSpec* pspec);
 
-static void draw_single_k_line(k_line* _k_line, cairo_t* t, int start_x, int start_y);
+static void draw_single_k_line(k_line* _k_line, cairo_t* t, int start_x, int start_y, int height, int width,
+	float, float, float, float);
 
 static gboolean print_hello(GtkWidget* widget, GdkEventCrossing* event) {
 	std::cout << "Signal Print Hello" << std::endl;
@@ -31,8 +31,22 @@ static void k_line_init(k_line* _k_line_p) {
 	//gtk_widget_set_receives_default(GTK_WIDGET(_k_line_p), true);
 	//gtk_widget_set_has_window(GTK_WIDGET(_k_line_p), TRUE);
 	gtk_widget_add_events(GTK_WIDGET(_k_line_p), GDK_POINTER_MOTION_MASK);
-	g_signal_connect(GTK_WIDGET(_k_line_p), "motion-notify-event", G_CALLBACK(print_hello), NULL);
+	// 下面一行代码监听鼠标移动事件
+	// g_signal_connect(GTK_WIDGET(_k_line_p), "motion-notify-event", G_CALLBACK(print_hello), NULL);
 	//g_signal_connect(GTK_WIDGET(_k_line_p), "realize", G_CALLBACK(print_hello_realize), NULL);
+
+	_k_line_p->info_list = new price_info*[10];
+	for (int i = 0; i < 10; i++) {
+		_k_line_p->info_list[i] = new price_info{
+			std::string("123213"),
+			std::string("234234"),
+			10.01f + i,
+			11.01f + i,
+			12.01f + i,
+			8.01f + i
+		};
+	}
+	_k_line_p->info_list_length = 10;
 }
 
 static void k_line_class_init(k_line_class* _k_line_class_p) {
@@ -42,9 +56,9 @@ static void k_line_class_init(k_line_class* _k_line_class_p) {
 	gobject_class = G_OBJECT_CLASS(_k_line_class_p);
 	widget_class = (GtkWidgetClass*)_k_line_class_p;
 	widget_class->draw = k_line_draw;
-	/*widget_class->size_allocate = gtk_entry_size_allocate;
+	/*widget_class->size_allocate = gtk_entry_size_allocate;*/
 	widget_class->get_preferred_width = gtk_k_line_get_preferred_width;
-	widget_class->get_preferred_height = gtk_k_line_get_preferred_height;*/
+	widget_class->get_preferred_height = gtk_k_line_get_preferred_height;
 	gobject_class->set_property = k_line_set_property;
 	gobject_class->get_property = k_line_get_property;
 
@@ -54,6 +68,11 @@ static void k_line_class_init(k_line_class* _k_line_class_p) {
 			"Price Information of this k line",
 			G_VARIANT_TYPE_DICTIONARY,
 			NULL,
+			G_PARAM_READWRITE);
+	obj_properties[PRICE_INFO_LIST] = 
+		g_param_spec_pointer("price-info-list",
+			"Price Info List",
+			"All Price Information of k lines",
 			G_PARAM_READWRITE);
 	g_object_class_install_properties(gobject_class,
 		P_LENGTH,
@@ -87,124 +106,30 @@ GtkWidget* k_line_new_with_price_info(GVariant* price_info) {
 }
 
 static gboolean k_line_draw(GtkWidget* widget, cairo_t* cr) {
-	//int width_val = gtk_widget_get_allocated_width(widget);
-	//int height_val = gtk_widget_get_allocated_height(widget);
-	//GtkAllocation val_allocation{};
-	//gtk_widget_get_allocation(widget, &val_allocation);
-
-	//GtkAllocation val_clip{};
-	//gtk_widget_get_clip(widget, &val_clip);
-	//std::cout << "x is " << val_allocation.x << "y is " << val_allocation.y << std::endl;
-	//std::cout << "width is " << width_val << "height is " << height_val << std::endl;
-
-	//// 计算一下K线的宽度和高度以及放置位置
-	//k_line* _k_line = K_LINE(widget);
-
-	////计算实体部分的占比
-	//float close_open_delta_abs = _k_line->close > _k_line->open ? _k_line->close - _k_line->open : _k_line->open - _k_line->close;
-	//float main_content_p = close_open_delta_abs / (_k_line->high - _k_line->low);
-
-	////计算上影线占比
-	//float up_line_delta_abs = _k_line->high - (_k_line->open > _k_line->close ? _k_line->open : _k_line->close);
-	//float up_line_p = up_line_delta_abs / (_k_line->high - _k_line->low);
-
-	////计算下影线占比
-	//float down_line_p = main_content_p + up_line_p;
-
-	//double start_x = 0;
-	//double start_y = val_clip.height * up_line_p;
-	//double width = val_clip.width;
-	//double height = val_clip.height * main_content_p;
-
-	//double up_line_start_x = (val_clip.width / 2);
-	//double up_line_start_y = 0;
-	//double up_line_end_x = (val_clip.width / 2);
-	//double up_line_end_y = val_clip.height * up_line_p;
-
-	//double down_line_start_y = val_clip.height * down_line_p;
-
-	//cairo_set_source_rgb(cr, 0.36078, 0.733333, 0.46274);
-	//cairo_set_line_width(cr, 3);
-
-	//// 绘制K线实体部分
-	//cairo_rectangle(cr, start_x, start_y, width, height);
-	//cairo_fill_preserve(cr);
-	//cairo_stroke(cr);
-
-	//std::cout << "up line " << up_line_start_x << " " << up_line_start_y << " "
-	//	<< " " << up_line_end_x << " " << up_line_end_y << std::endl;
-
-	//// 绘制K线上影线
-	//cairo_move_to(cr, up_line_start_x, up_line_start_y);
-	//cairo_line_to(cr, up_line_end_x, up_line_end_y);
-	//cairo_stroke(cr);
-
-	//// 绘制K线下影线
-	//cairo_move_to(cr, up_line_start_x, down_line_start_y);
-	//cairo_line_to(cr, up_line_end_x, val_clip.height);
-	//cairo_stroke(cr);
-
-	GtkAllocation val_clip{};
-	gtk_widget_get_clip(widget, &val_clip);
-
-	// 计算一下K线的宽度和高度以及放置位置
-	k_line* _k_line = K_LINE(widget);
-
-	//计算实体部分的占比
-	float close_open_delta_abs = _k_line->close > _k_line->open ? _k_line->close - _k_line->open : _k_line->open - _k_line->close;
-	float main_content_p = close_open_delta_abs / (_k_line->high - _k_line->low);
-
-	//计算上影线占比
-	float up_line_delta_abs = _k_line->high - (_k_line->open > _k_line->close ? _k_line->open : _k_line->close);
-	float up_line_p = up_line_delta_abs / (_k_line->high - _k_line->low);
-
-	//计算下影线占比
-	float down_line_p = main_content_p + up_line_p;
-
-	double start_x = 0;
-	double start_y = 0 + val_clip.height * up_line_p;
-	double width = val_clip.width;
-	double height = val_clip.height * main_content_p;
-
-	double up_line_start_x = val_clip.x + (val_clip.width / 2);
-	double up_line_start_y = val_clip.y;
-	double up_line_end_x = val_clip.x + (val_clip.width / 2);
-	double up_line_end_y = val_clip.y + val_clip.height * up_line_p;
-
-	double down_line_start_y = val_clip.y + val_clip.height * down_line_p;
-
-	if (_k_line->open > _k_line->close) {
-		cairo_set_source_rgb(cr, 0.36078, 0.733333, 0.46274);
-	}
-	else {
-		cairo_set_source_rgb(cr, 1, 0.1764, 0.1686);
-	}
-	cairo_set_line_width(cr, 3);
-
-	// 绘制K线实体部分
-	cairo_rectangle(cr, start_x, start_y, width, height);
-	if (_k_line->open > _k_line->close) {
-		cairo_fill_preserve(cr);
-	}
-	cairo_stroke(cr);
-	std::cout << "x: " << val_clip.x << " y: " << val_clip.y << " width: " << val_clip.width
-		<< " height: " << val_clip.height << std::endl;
-
-	std::cout << "open:" << _k_line->open << " close:" << _k_line->close << " high:" << _k_line->high << " low:" << _k_line->low << std::endl;
-
-	// 绘制K线上影线
-	cairo_move_to(cr, up_line_start_x, up_line_start_y);
-	cairo_line_to(cr, up_line_end_x, up_line_end_y);
-	cairo_stroke(cr);
-
-	// 绘制K线下影线
-	cairo_move_to(cr, up_line_start_x, down_line_start_y);
-	cairo_line_to(cr, up_line_end_x, val_clip.height);
-	cairo_stroke(cr);
 	
+	k_line* _k_line_p = K_LINE(widget);
 
-	// 统计信息
-	std::cout << "width is:" << width << " height is :" << height << std::endl;
+	GtkAllocation allocation{};
+	gtk_widget_get_clip(widget, &allocation);
+	// 计算每根K线的宽度
+	int each_width = allocation.width / _k_line_p->info_list_length;
+	
+	// 找出最低价以及最高价，计算每条K线的起始高度以及高度
+	float min_price = 8.01;
+	float max_price = 21.01;
+	float between = max_price - min_price;
+	std::cout << allocation.x << " " << allocation.y << " " << allocation.height << " " << allocation.width << std::endl;
+
+	/*cairo_rectangle(cr, 20, 30, allocation.width / 2, allocation.height - 30);
+	cairo_stroke(cr);*/
+
+	for (int i = 0; i < _k_line_p->info_list_length; i++) {
+		price_info* temp_price_info = _k_line_p->info_list[i];
+		int start_y = (max_price - temp_price_info->high) / between * allocation.height;
+		int height = (temp_price_info->high - temp_price_info->low) / between * allocation.height;
+		draw_single_k_line(_k_line_p, cr, 0 + i * each_width, start_y, each_width, height, 
+			temp_price_info->open, temp_price_info->close, temp_price_info->high, temp_price_info->low);
+	}
 
 	return FALSE;
 }
@@ -224,15 +149,15 @@ static gboolean k_line_draw(GtkWidget* widget, cairo_t* cr) {
 //	//gtk_widget_set_clip(widget, allocation);
 //}
 
-//static void gtk_k_line_get_preferred_width(GtkWidget* widget, gint* minimum_width, gint* natural_width) {
-//	(*minimum_width) = 200;
-//	(*natural_width) = 200;
-//}
-//
-//static void gtk_k_line_get_preferred_height(GtkWidget* widget, gint* minimum_height, gint* natural_height) {
-//	(*minimum_height) = 200;
-//	(*natural_height) = 200;
-//}
+static void gtk_k_line_get_preferred_width(GtkWidget* widget, gint* minimum_width, gint* natural_width) {
+	(*minimum_width) = 200;
+	(*natural_width) = 200;
+}
+
+static void gtk_k_line_get_preferred_height(GtkWidget* widget, gint* minimum_height, gint* natural_height) {
+	(*minimum_height) = 200;
+	(*natural_height) = 200;
+}
 //}
 
 static void k_line_set_property(GObject* object, guint property_id, const GValue* value, GParamSpec* pspec) {
@@ -241,6 +166,7 @@ static void k_line_set_property(GObject* object, guint property_id, const GValue
 	GVariant* variant_val = nullptr;
 	k_line* _k_line = nullptr;
 	gdouble price = 0;
+	gpointer pointer = nullptr;
 	switch (property_id)
 	{
 	case PRICE_INFO:
@@ -256,6 +182,9 @@ static void k_line_set_property(GObject* object, guint property_id, const GValue
 		_k_line->low = price;
 		std::cout << "open : " << _k_line->open << ";close is " << _k_line->close << std::endl;
 		break;
+	case PRICE_INFO_LIST:
+		_k_line = K_LINE(object);
+		pointer = g_value_get_pointer(value);
 
 	default:
 		/* We don't have any other property... */
@@ -283,8 +212,63 @@ static void k_line_get_property(GObject* object, guint property_id, GValue* valu
 	}
 }
 
-static void draw_single_k_line(k_line* _k_line, cairo_t* t, int start_x, int start_y) {
-	
+static void draw_single_k_line(k_line* _k_line, cairo_t* cr, int start_x, int start_y, int width, int height,
+	float open, float close, float high, float low) {
+	std::cout << "draw single K line price:" << open << " " << close << " " << high << " " << low << std::endl;
+	std::cout << "draw single K line :" << start_x << " " << start_y << " " << width << " " << height << std::endl;
+	float close_open_delta_abs = close > open ? close - open : open - close;
+	float main_content_p = close_open_delta_abs / (high - low);
+
+	// 左右留点白，不然太难看
+	int margin = width * 0.05;
+	start_x += margin;
+	width -= 2 * margin;
+
+	//计算上影线占比
+	float up_line_delta_abs = high - (open > close ? open : close);
+	float up_line_p = up_line_delta_abs / (high - low);
+
+	//计算下影线占比
+	float down_line_p = main_content_p + up_line_p;
+
+	double main_start_x = start_x;
+	double main_start_y = start_y + height * up_line_p;
+	double main_width = width;
+	double main_height = height * main_content_p;
+
+	double up_line_start_x = start_x + (width / 2);
+	double up_line_start_y = start_y;
+	double up_line_end_x = start_x + (width / 2);
+	double up_line_end_y = start_y + height * up_line_p;
+	std::cout << up_line_start_y << std::endl;
+
+	double down_line_start_y = start_y + height * down_line_p;
+
+	// 说明是
+	if (open > close) {
+		cairo_set_source_rgb(cr, 0.36078, 0.733333, 0.46274);
+	}
+	else {
+		cairo_set_source_rgb(cr, 1, 0.1764, 0.1686);
+	}
+	cairo_set_line_width(cr, 3);
+
+	// 绘制K线实体部分
+	cairo_rectangle(cr, main_start_x, main_start_y, main_width, main_height);
+	if (open > close) {
+		cairo_fill_preserve(cr);
+	}
+	cairo_stroke(cr);
+
+	// 绘制K线上影线
+	cairo_move_to(cr, up_line_start_x, up_line_start_y);
+	cairo_line_to(cr, up_line_end_x, up_line_end_y);
+	cairo_stroke(cr);
+
+	// 绘制K线下影线
+	cairo_move_to(cr, up_line_start_x, down_line_start_y);
+	cairo_line_to(cr, up_line_end_x, start_y + height);
+	cairo_stroke(cr);
 }
 
 

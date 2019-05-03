@@ -5,10 +5,13 @@
 #include <gtk/gtk.h>
 #include <iostream>
 #include "k_line.h"
+#include "time_index_chart.h"
+#include "stock_app.h"
+#include "stock_app_window.h"
 
 class ui_main {
 private:
-	GtkApplication* app;
+	GApplication* app;
 
 	static void print_hello_(GtkWidget* widget, gpointer data);
 	static void activate_fun(GtkApplication*);
